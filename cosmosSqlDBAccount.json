@@ -5,7 +5,7 @@
     "accountName": {
       "type": "string",
       "metadata": {
-        "description": "Cosmos DB account name"
+        "description": "The name of Azure Cosmos DB SQL API account"
       }
     },
     "location": {
@@ -28,22 +28,12 @@
     },
     "defaultConsistencyLevel": {
       "type": "string",
-      "defaultValue": "Session",
-      "allowedValues": [
-        "Eventual",
-        "ConsistentPrefix",
-        "Session",
-        "BoundedStaleness",
-        "Strong"
-      ],
       "metadata": {
         "description": "The default consistency level of the Cosmos DB account."
       }
     },
     "automaticFailover": {
       "type": "bool",
-      "defaultValue": true,
-      "allowedValues": [true, false],
       "metadata": {
         "description": "Enable automatic failover for regions. Ignored when Multi-Master is enabled"
       }
