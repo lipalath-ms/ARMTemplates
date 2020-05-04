@@ -5,30 +5,25 @@
     "accountName": {
       "type": "string",
       "metadata": {
-        "description": "Cosmos DB account name"
+        "description": "The name of Azure Cosmos DB SQL API account"
       }
     },
     "containerName": {
       "type": "string",
-      "defaultValue": "myContainer",
       "metadata": {
-        "description": "The name for the container"
+        "description": "The name of Azure Cosmos DB SQL API container"
       }
     },
     "databaseName": {
       "type": "string",
-      "defaultValue": "myDatabase",
       "metadata": {
-        "description": "The name for the database"
+        "description": "The name of Azure Cosmos DB SQL API database"
       }
     },
     "databaseThroughput": {
       "type": "int",
-      "defaultValue": 400,
-      "minValue": 400,
-      "maxValue": 1000000,
       "metadata": {
-        "description": "The throughput for the database"
+        "description": "The throughput for Azure Cosmos DB SQL API database"
       }			
     }
   },
