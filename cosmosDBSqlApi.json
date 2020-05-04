@@ -22,7 +22,7 @@
         "description": "The name for the database"
       }
     },
-    "throughput": {
+    "databaseThroughput": {
       "type": "int",
       "defaultValue": 400,
       "minValue": 400,
@@ -44,7 +44,7 @@
         "resource":{
           "id": "[parameters('databaseName')]"
         },
-        "options": { "throughput": "[parameters('throughput')]" }
+        "options": { "throughput": "[parameters('databaseThroughput')]" }
       }
     },
     {
