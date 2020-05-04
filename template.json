@@ -164,7 +164,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "https://github.com/xyz92/ARMTemplates/blob/master/cosmosDBAccount.json",
+          "uri": "https://raw.githubusercontent.com/xyz92/ARMTemplates/master/cosmosDBAccount.json",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -196,7 +196,7 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "https://github.com/xyz92/ARMTemplates/blob/master/cosmosDBSqlApi.json",
+          "uri": "https://raw.githubusercontent.com/xyz92/ARMTemplates/master/cosmosDBSqlApi.json",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
