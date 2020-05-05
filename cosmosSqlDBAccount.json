@@ -74,6 +74,11 @@
       "name": "[variables('accountName')]",
       "apiVersion": "2020-03-01",
       "location": "[parameters('location')]",
+      "tags": {
+        "Owner": "[resourceGroup().tags.Owner]",
+        "Env": "[resourceGroup().tags.Env]",
+        "ComponentId": "[resourceGroup().tags.ComponentId]"
+      },
       "kind": "GlobalDocumentDB",
       "properties": {
         "consistencyPolicy": "[variables('consistencyPolicy')[parameters('defaultConsistencyLevel')]]",
@@ -87,10 +92,6 @@
     "primaryConnectionString": {
       "type": "string",
       "value": "[concat(listConnectionStrings(resourceId(resourcegroup().name, 'Microsoft.DocumentDB/databaseAccounts', variables('accountName')), providers('Microsoft.DocumentDB', 'databaseAccounts').apiVersions[0]).connectionStrings[0].connectionString)]"
-    },
-    "primaryReadOnlyConnectionString": {
-      "type": "string",
-      "value": "[concat(listConnectionStrings(resourceId(resourcegroup().name, 'Microsoft.DocumentDB/databaseAccounts', variables('accountName')), providers('Microsoft.DocumentDB', 'databaseAccounts').apiVersions[0]).connectionStrings[2].connectionString)]"
     }
   }
 }
