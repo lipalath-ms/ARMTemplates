@@ -13,12 +13,8 @@
           "defaultValue": "Q69PWF/w7qEq/l:G?vxEPAlLqYAq2BwX"
       },
       "Cosmos_DB_connectionString": {
-          "type": "string",
-          "defaultValue": "test"
-      },
-      "AzureBlobStorage_connectionString": {
-          "type": "string",
-          "defaultValue": "test"
+          "type": "secureString",
+          "metadata": "Secure string for 'connectionString' of 'Cosmos_DB'"
       },
       "HR_Data_Lake_properties_typeProperties_url": {
           "type": "string",
@@ -683,19 +679,6 @@
               "type": "CosmosDb",
               "typeProperties": {
                   "connectionString": "[parameters('Cosmos_DB_connectionString')]"
-              }
-          },
-          "dependsOn": []
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
-          "type": "Microsoft.DataFactory/factories/linkedServices",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "annotations": [],
-              "type": "AzureBlobStorage",
-              "typeProperties": {
-                  "connectionString": "[parameters('AzureBlobStorage_connectionString')]"
               }
           },
           "dependsOn": []
