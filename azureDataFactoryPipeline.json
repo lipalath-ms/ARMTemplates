@@ -7,11 +7,11 @@
         },
         "HR_Data_Lake_servicePrincipalKey": {
             "type": "string",
-            "defaultValue": "Q69PWF/w7qEq/l:G?vxEPAlLqYAq2BwX"
+            "defaultValue": "test"
         },
         "Cosmos_DB_connectionString": {
-            "type": "securestring",
-            "defaultValue": "AccountEndpoint=https://gmm-compute-lp.documents.azure.com:443/;AccountKey=yCBPjPRaJycrnxEIR64qq7Y5OtqlMVCq4ROn3cYmzO9D2Jeejks67SiDKdPvxvtEl4tUkoOzDrb8qd9UKoF4oA==;Database=gmm-compute-lp;"
+            "type": "string",
+            "defaultValue": "test"
         },
         "AzureBlobStorage_connectionString": {
             "type": "string",
@@ -19,15 +19,15 @@
         },
         "HR_Data_Lake_properties_typeProperties_url": {
             "type": "string",
-            "defaultValue": "https://hcmlakeuat.dfs.core.windows.net"
+            "defaultValue": "test"
         },
         "HR_Data_Lake_properties_typeProperties_tenant": {
             "type": "string",
-            "defaultValue": "72f988bf-86f1-41af-91ab-2d7cd011db47"
+            "defaultValue": "test"
         },
         "HR_Data_Lake_properties_typeProperties_servicePrincipalId": {
             "type": "string",
-            "defaultValue": "0861e618-d3f0-4791-aa57-2c9e8525e0b1"
+            "defaultValue": "test"
         }
     },
     "variables": {
