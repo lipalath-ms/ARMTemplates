@@ -13,8 +13,8 @@
           "defaultValue": "Q69PWF/w7qEq/l:G?vxEPAlLqYAq2BwX"
       },
       "Cosmos_DB_connectionString": {
-          "type": "secureString",
-          "metadata": "Secure string for 'connectionString' of 'Cosmos_DB'"
+          "type": "string",
+          "defaultValue": "test"
       },
       "HR_Data_Lake_properties_typeProperties_url": {
           "type": "string",
