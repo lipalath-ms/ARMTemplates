@@ -11,7 +11,7 @@
         },
         "Cosmos_DB_connectionString": {
             "type": "string",
-            "defaultValue": "AccountEndpoint=https://gmm-compute-lp.documents.azure.com:443/;Database=gmm-compute-lp;"
+            "defaultValue": "uH69urNgSh2kXByPu3rePEfz4t2RPcjh0N729FBw7ymNV9lEYjjzyIkH20HBeB3vJUecpbYKC4mqfePuFeEAHQ=="
         },
         "AzureBlobStorage_connectionString": {
             "type": "string",
