@@ -35,11 +35,6 @@
       "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
       "name": "[concat(variables('accountName'), '/', parameters('databaseName'))]",
       "apiVersion": "2020-03-01",
-      "tags": {
-        "Owner": "[resourceGroup().tags.Owner]",
-        "Env": "[resourceGroup().tags.Env]",
-        "ComponentId": "[resourceGroup().tags.ComponentId]"
-      },
       "properties":{
         "resource":{
           "id": "[parameters('databaseName')]"
