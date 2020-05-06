@@ -694,6 +694,19 @@
           "dependsOn": []
       },
       {
+          "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
+          "type": "Microsoft.DataFactory/factories/linkedServices",
+          "apiVersion": "2018-06-01",
+          "properties": {
+              "annotations": [],
+              "type": "AzureBlobStorage",
+              "typeProperties": {
+                  "connectionString": "test"
+              }
+          },
+          "dependsOn": []
+      },
+      {
           "name": "[concat(parameters('factoryName'), '/ActualDataFlow')]",
           "type": "Microsoft.DataFactory/factories/dataflows",
           "apiVersion": "2018-06-01",
