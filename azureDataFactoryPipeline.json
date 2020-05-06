@@ -20,7 +20,7 @@
                 "description": "Secure string for 'connectionString' of 'Cosmos_DB'"
             }
         },
-        "dataLakeStorage": {
+        "dataLakeStorageUrl": {
             "type": "string",
             "metadata": {
                 "description": "URL of Azure Data Lake Storage Gen2"
@@ -669,7 +669,7 @@
               "annotations": [],
               "type": "AzureBlobFS",
               "typeProperties": {
-                  "url": "[parameters('dataLakeStorage')]",
+                  "url": "[parameters('dataLakeStorageUrl')]",
                   "tenant": "[parameters('tenantId')]",
                   "servicePrincipalId": "[parameters('servicePrincipalId')]",
                   "servicePrincipalKey": {
