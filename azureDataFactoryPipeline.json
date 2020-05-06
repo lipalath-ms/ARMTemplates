@@ -1,1268 +1,1268 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-        "factoryName": {
-            "type": "string",
-            "metadata": {
-                "description": "Name of Azure Data Factory"
-            }
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+          "factoryName": {
+              "type": "string",
+              "metadata": {
+                  "description": "Name of Azure Data Factory"
+              }
+          },
+          "servicePrincipalKey": {
+              "type": "securestring",
+              "metadata": {
+                  "description": "Application (client) Secret"
+              }
+          },
+          "cosmosSqlDBConnectionString": {
+              "type": "securestring",
+              "metadata": {
+                  "description": "Cosmos DB sonnection string"
+              }
+          },
+          "dataLakeStorageUrl": {
+              "type": "string",
+              "metadata": {
+                  "description": "URL of Azure Data Lake Storage Gen2"
+              }
+          },
+          "tenantId": {
+              "type": "string",
+              "metadata": {
+                  "description": "tenant ID"
+              }
+          },
+          "servicePrincipalId": {
+              "type": "string",
+              "metadata": {
+                  "description": "Application (client) ID"
+              }
+          }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureDataLakePipeline')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "FetchHandShakeValue",
+                        "type": "Lookup",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "source": {
+                                "type": "ParquetSource",
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "wildcardFileName": "*.parquet",
+                                    "enablePartitionDiscovery": false
+                                }
+                            },
+                            "dataset": {
+                                "referenceName": "Handshake",
+                                "type": "DatasetReference",
+                                "parameters": {}
+                            }
+                        }
+                    },
+                    {
+                        "name": "ActualDataFlow",
+                        "type": "ExecuteDataFlow",
+                        "dependsOn": [
+                            {
+                                "activity": "FetchHandShakeValue",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "dataflow": {
+                                "referenceName": "CSVDataFlow",
+                                "type": "DataFlowReference",
+                                "parameters": {},
+                                "datasetParameters": {
+                                    "HC01Person": {
+                                        "HandShakeValue": {
+                                            "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
+                                            "type": "Expression"
+                                        }
+                                    },
+                                    "HC01PersonPosition": {
+                                        "HandShakeValue": {
+                                            "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
+                                            "type": "Expression"
+                                        }
+                                    },
+                                    "HC01PersonCareerStage": {
+                                        "HandShakeValue": {
+                                            "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
+                                            "type": "Expression"
+                                        }
+                                    },
+                                    "HC01Employee": {
+                                        "HandShakeValue": {
+                                            "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
+                                            "type": "Expression"
+                                        }
+                                    },
+                                    "HC01ReportsToHierarchyTree": {
+                                        "HandShakeValue": {
+                                            "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
+                                            "type": "Expression"
+                                        }
+                                    },
+                                    "Output": {}
+                                }
+                            },
+                            "staging": {},
+                            "compute": {
+                                "coreCount": 8,
+                                "computeType": "MemoryOptimized"
+                            }
+                        }
+                    }
+                ],
+                "annotations": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/Handshake')]",
+                "[concat(variables('factoryId'), '/dataflows/CSVDataFlow')]"
+            ]
         },
-        "servicePrincipalKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Application (client) Secret"
-            }
+        {
+            "name": "[concat(parameters('factoryName'), '/Handshake')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "HC01/Handshake",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
         },
-        "Cosmos_DB_connectionString": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Secure string for 'connectionString' of 'Cosmos_DB'"
-            }
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01Person')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01Person/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
         },
-        "dataLakeStorageUrl": {
-            "type": "string",
-            "metadata": {
-                "description": "URL of Azure Data Lake Storage Gen2"
-            }
+        {
+            "name": "[concat(parameters('factoryName'), '/CosmosDB')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "Cosmos_DB",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "CosmosDbSqlApiCollection",
+                "schema": {},
+                "typeProperties": {
+                    "collectionName": {
+                        "value": "DataLake",
+                        "type": "Expression"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/Cosmos_DB')]"
+            ]
         },
-        "tenantId": {
-            "type": "string",
-            "metadata": {
-				"description": "tenant ID"
-			}
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01PersonCareerStage')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01PersonCareerStage/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
         },
-        "servicePrincipalId": {
-            "type": "string",
-            "metadata": {
-                "description": "Application (client) ID"
-            }
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01Employee')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01Employee/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01PersonPosition')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01PersonPosition/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01JobCareerStage')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01JobCareerStage/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01EmployeePosition')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01EmployeePosition/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01PersonStatus')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01PersonStatus/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01Position')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01Position/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01OrgBusiness')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01OrgBusiness/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01StaffingResourceType')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01StaffingResourceType/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01ReportsToHierarchyTree')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HR_Data_Lake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01ReportsToHierarchyTree/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DelimitedText')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "AzureBlobStorage",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobStorageLocation",
+                        "container": {
+                            "value": "personnelnumberjoin",
+                            "type": "Expression"
+                        }
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/trigger1')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Started",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "AzureDataLakePipeline",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Hour",
+                        "interval": 12,
+                        "startTime": "2020-04-29T23:12:00Z",
+                        "endTime": "2020-04-30T23:12:00Z",
+                        "timeZone": "UTC"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/AzureDataLakePipeline')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HR_Data_Lake')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('dataLakeStorageUrl')]",
+                    "tenant": "[parameters('tenantId')]",
+                    "servicePrincipalId": "[parameters('servicePrincipalId')]",
+                    "servicePrincipalKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('servicePrincipalKey')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/Cosmos_DB')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "CosmosDb",
+                "typeProperties": {
+                    "connectionString": "[parameters('cosmosSqlDBConnectionString')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "test"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ActualDataFlow')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Person",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Person"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Employee",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Employee"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonStatus",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonStatus"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonPosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonPosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01JobCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01JobCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01EmployeePosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01EmployeePosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Position",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Position"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01OrgBusiness",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01OrgBusiness"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "CosmosDB",
+                                "type": "DatasetReference"
+                            },
+                            "name": "Output"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "HC01PersonProjection"
+                        },
+                        {
+                            "name": "Typecase"
+                        },
+                        {
+                            "name": "HC01PersonCareerStageProjection"
+                        },
+                        {
+                            "name": "JoinOne"
+                        },
+                        {
+                            "name": "HC01EmployeeProjection"
+                        },
+                        {
+                            "name": "JoinTwo"
+                        },
+                        {
+                            "name": "HC01PersonStatusProjection"
+                        },
+                        {
+                            "name": "JoinThree"
+                        },
+                        {
+                            "name": "HC01PersonPositionProjection"
+                        },
+                        {
+                            "name": "JoinFour"
+                        },
+                        {
+                            "name": "HC01JobCareerStageProjection"
+                        },
+                        {
+                            "name": "JoinFive"
+                        },
+                        {
+                            "name": "HC01EmployeePositionProjection"
+                        },
+                        {
+                            "name": "JoinSix"
+                        },
+                        {
+                            "name": "HC01PositionProjection"
+                        },
+                        {
+                            "name": "JoinSeven"
+                        },
+                        {
+                            "name": "HC01OrgBusinessProjection"
+                        },
+                        {
+                            "name": "JoinEight"
+                        }
+                    ],
+                    "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tPersonStatusCode as string,\n\t\tPersonStatusDesc as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonStatus\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tCareerStageNumber as integer,\n\t\tCareerStageProfileNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPayScaleAreaCode as string,\n\t\tPayScaleStockLevelNbr as string,\n\t\tPayScaleTypeCode as string,\n\t\tStandardTitleNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01JobCareerStage\nsource(output(\n\t\tIncrementalPositionInd as string,\n\t\tManagerOfManagersInd as string,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tProjectCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tSupervisorInd as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01EmployeePosition\nsource(output(\n\t\tAcquisitionPositionTypeCode as string,\n\t\tApprovedInd as string,\n\t\tAttribute1Code as string,\n\t\tAttribute2Code as string,\n\t\tCanadaNOCCode as string,\n\t\tClosedPositionInd as string,\n\t\tCompanyCode as string,\n\t\tCostCenterCode as string,\n\t\tCSCategoryCode as string,\n\t\tIncentivePlanTypeCode as string,\n\t\tJobFunctionCode as string,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tOnSiteInd as string,\n\t\tOpenPositionInd as string,\n\t\tOrgBusinessID as integer,\n\t\tOutsourcedIndicator as string,\n\t\tPositionClassCode as string,\n\t\tPositionEffDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tPositionPersonGroupCode as string,\n\t\tPositionPersonSubGroupCode as string,\n\t\tPositionToDate as timestamp,\n\t\tPositionWFPInd as string,\n\t\tProjectCode as string,\n\t\tQualifier2Code as string,\n\t\tQuotaBearingClassification as string,\n\t\tReportsToPositionNbr as integer,\n\t\tResourceJustificationCode as string,\n\t\tResourceType as string,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tWorkLocationCountryCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Position\nsource(output(\n\t\tBusiness as string,\n\t\tOrganization as string,\n\t\tOrgBusinessID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01OrgBusiness\nHC01Person select(mapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nJoinEight derive(PersonnelNumber = toString(HC01PersonProjection@PersonnelNumber),\n\t\tPersonStatusCode = toString(HC01PersonStatusProjection@PersonStatusCode),\n\t\tCareerStageNumber = toString(HC01JobCareerStageProjection@CareerStageNumber),\n\t\tPositionNumber = toString(HC01PersonPositionProjection@PositionNumber),\n\t\tOrgBusinessID = toString(HC01OrgBusinessProjection@OrgBusinessID)) ~> Typecase\nHC01PersonCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01PersonProjection, HC01PersonCareerStageProjection join(HC01PersonProjection@PersonnelNumber == HC01PersonCareerStageProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinOne\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nJoinOne, HC01EmployeeProjection join(HC01PersonProjection@PersonnelNumber == HC01EmployeeProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinTwo\nHC01PersonStatus select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonStatusProjection\nJoinTwo, HC01PersonStatusProjection join(HC01PersonProjection@PersonStatusCode == HC01PersonStatusProjection@PersonStatusCode,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinThree\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\tPersonnelNumber,\n\t\tPositionNumber,\n\t\tStandardTitle\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nJoinThree, HC01PersonPositionProjection join(HC01PersonProjection@PersonnelNumber == HC01PersonPositionProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinFour\nHC01JobCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPayScaleStockLevelNbr\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01JobCareerStageProjection\nJoinFour, HC01JobCareerStageProjection join(HC01PersonCareerStageProjection@CareerStageNumber == HC01JobCareerStageProjection@CareerStageNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinFive\nHC01EmployeePosition select(mapColumn(\n\t\tPositionNumber,\n\t\tSupervisorInd\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeePositionProjection\nJoinFive, HC01EmployeePositionProjection join(HC01PersonPositionProjection@PositionNumber == HC01EmployeePositionProjection@PositionNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinSix\nHC01Position select(mapColumn(\n\t\tOrgBusinessID,\n\t\tPositionNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PositionProjection\nJoinSix, HC01PositionProjection join(HC01PersonPositionProjection@PositionNumber == HC01PositionProjection@PositionNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinSeven\nHC01OrgBusiness select(mapColumn(\n\t\tBusiness,\n\t\tOrganization,\n\t\tOrgBusinessID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01OrgBusinessProjection\nJoinSeven, HC01OrgBusinessProjection join(HC01PositionProjection@OrgBusinessID == HC01OrgBusinessProjection@OrgBusinessID,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinEight\nTypecase sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tthroughput: (400),\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tid = PersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode,\n\t\tCareerStageNumber,\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tPersonStatusDesc,\n\t\tJobTitleName,\n\t\tPositionNumber,\n\t\tStandardTitle,\n\t\tPayScaleStockLevelNbr,\n\t\tSupervisorInd,\n\t\tOrgBusinessID,\n\t\tBusiness,\n\t\tOrganization\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HC01Person')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonStatus')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01JobCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01EmployeePosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Position')]",
+                "[concat(variables('factoryId'), '/datasets/HC01OrgBusiness')]",
+                "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TestDataFlow')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Person",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Person"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Employee",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Employee"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonStatus",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonStatus"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonPosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonPosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01JobCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01JobCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01EmployeePosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01EmployeePosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Position",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Position"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01OrgBusiness",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01OrgBusiness"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "CosmosDB",
+                                "type": "DatasetReference"
+                            },
+                            "name": "Output"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "HC01PersonProjection"
+                        },
+                        {
+                            "name": "Typecase"
+                        },
+                        {
+                            "name": "HC01PersonCareerStageProjection"
+                        },
+                        {
+                            "name": "JoinOne"
+                        },
+                        {
+                            "name": "HC01EmployeeProjection"
+                        },
+                        {
+                            "name": "JoinTwo"
+                        },
+                        {
+                            "name": "HC01PersonStatusProjection"
+                        },
+                        {
+                            "name": "HC01PersonPositionProjection"
+                        },
+                        {
+                            "name": "HC01JobCareerStageProjection"
+                        },
+                        {
+                            "name": "HC01EmployeePositionProjection"
+                        },
+                        {
+                            "name": "HC01PositionProjection"
+                        },
+                        {
+                            "name": "HC01OrgBusinessProjection"
+                        }
+                    ],
+                    "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tPersonStatusCode as string,\n\t\tPersonStatusDesc as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonStatus\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tCareerStageNumber as integer,\n\t\tCareerStageProfileNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPayScaleAreaCode as string,\n\t\tPayScaleStockLevelNbr as string,\n\t\tPayScaleTypeCode as string,\n\t\tStandardTitleNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01JobCareerStage\nsource(output(\n\t\tIncrementalPositionInd as string,\n\t\tManagerOfManagersInd as string,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tProjectCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tSupervisorInd as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01EmployeePosition\nsource(output(\n\t\tAcquisitionPositionTypeCode as string,\n\t\tApprovedInd as string,\n\t\tAttribute1Code as string,\n\t\tAttribute2Code as string,\n\t\tCanadaNOCCode as string,\n\t\tClosedPositionInd as string,\n\t\tCompanyCode as string,\n\t\tCostCenterCode as string,\n\t\tCSCategoryCode as string,\n\t\tIncentivePlanTypeCode as string,\n\t\tJobFunctionCode as string,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tOnSiteInd as string,\n\t\tOpenPositionInd as string,\n\t\tOrgBusinessID as integer,\n\t\tOutsourcedIndicator as string,\n\t\tPositionClassCode as string,\n\t\tPositionEffDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tPositionPersonGroupCode as string,\n\t\tPositionPersonSubGroupCode as string,\n\t\tPositionToDate as timestamp,\n\t\tPositionWFPInd as string,\n\t\tProjectCode as string,\n\t\tQualifier2Code as string,\n\t\tQuotaBearingClassification as string,\n\t\tReportsToPositionNbr as integer,\n\t\tResourceJustificationCode as string,\n\t\tResourceType as string,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tWorkLocationCountryCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Position\nsource(output(\n\t\tBusiness as string,\n\t\tOrganization as string,\n\t\tOrgBusinessID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01OrgBusiness\nHC01Person select(mapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nJoinTwo derive(PersonnelNumber = toString(HC01PersonProjection@PersonnelNumber)) ~> Typecase\nHC01PersonCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01PersonProjection, HC01PersonCareerStageProjection join(HC01PersonProjection@PersonnelNumber == HC01PersonCareerStageProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinOne\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nJoinOne, HC01EmployeeProjection join(HC01PersonProjection@PersonnelNumber == HC01EmployeeProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinTwo\nHC01PersonStatus select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonStatusProjection\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\tPersonnelNumber,\n\t\tPositionNumber,\n\t\tStandardTitle\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nHC01JobCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPayScaleStockLevelNbr\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01JobCareerStageProjection\nHC01EmployeePosition select(mapColumn(\n\t\tPositionNumber,\n\t\tSupervisorInd\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeePositionProjection\nHC01Position select(mapColumn(\n\t\tOrgBusinessID,\n\t\tPositionNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PositionProjection\nHC01OrgBusiness select(mapColumn(\n\t\tBusiness,\n\t\tOrganization,\n\t\tOrgBusinessID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01OrgBusinessProjection\nTypecase sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tthroughput: (5000),\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode,\n\t\tCareerStageNumber,\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HC01Person')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonStatus')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01JobCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01EmployeePosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Position')]",
+                "[concat(variables('factoryId'), '/datasets/HC01OrgBusiness')]",
+                "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/Test')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Person",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Person"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonPosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonPosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Employee",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Employee"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01JobCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01JobCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01EmployeePosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01EmployeePosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonStatus",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonStatus"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Position",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Position"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01OrgBusiness",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01OrgBusiness"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "CosmosDB",
+                                "type": "DatasetReference"
+                            },
+                            "name": "Output"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "HC01PersonProjection"
+                        },
+                        {
+                            "name": "HC01PersonPositionProjection"
+                        },
+                        {
+                            "name": "HC01PersonCareerStageProjection"
+                        },
+                        {
+                            "name": "HC01EmployeeProjection"
+                        },
+                        {
+                            "name": "Join1"
+                        },
+                        {
+                            "name": "Join2"
+                        },
+                        {
+                            "name": "Join3"
+                        },
+                        {
+                            "name": "Typecase"
+                        },
+                        {
+                            "name": "HC01JobCareerStageProjection"
+                        },
+                        {
+                            "name": "Join4"
+                        },
+                        {
+                            "name": "HC01EmployeePositionProjection"
+                        },
+                        {
+                            "name": "HC01PersonStatusProjection"
+                        }
+                    ],
+                    "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: (500),\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: (500),\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 500,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 500,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tCareerStageNumber as integer,\n\t\tCareerStageProfileNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPayScaleAreaCode as string,\n\t\tPayScaleStockLevelNbr as string,\n\t\tPayScaleTypeCode as string,\n\t\tStandardTitleNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 500,\n\tformat: 'parquet') ~> HC01JobCareerStage\nsource(output(\n\t\tIncrementalPositionInd as string,\n\t\tManagerOfManagersInd as string,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tProjectCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tSupervisorInd as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01EmployeePosition\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01PersonStatus\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01Position\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01OrgBusiness\nHC01Person select(mapColumn(\n\t\tLocationAreaCode,\n\t\t{Person.PersonnelNumber} = PersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\tPositionNumber,\n\t\tStandardTitle,\n\t\t{PersonPosition.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nHC01PersonCareerStage select(mapColumn(\n\t\t{PersonCareerStage.CareerStageNumber} = CareerStageNumber,\n\t\t{PersonCareerStage.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\t{Employee.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nHC01PersonProjection, HC01PersonPositionProjection join({Person.PersonnelNumber} == {PersonPosition.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join1\nJoin1, HC01PersonCareerStageProjection join({Person.PersonnelNumber} == {PersonCareerStage.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join2\nJoin2, HC01EmployeeProjection join({Person.PersonnelNumber} == {Employee.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join3\nJoin1 derive({Person.PersonnelNumber} = toString({Person.PersonnelNumber})) ~> Typecase\nHC01JobCareerStage select(mapColumn(\n\t\t{JobCareerStage.CareerStageNumber} = CareerStageNumber,\n\t\tPayScaleStockLevelNbr\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01JobCareerStageProjection\nJoin3, HC01JobCareerStageProjection join({PersonCareerStage.CareerStageNumber} == {JobCareerStage.CareerStageNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join4\nHC01EmployeePosition select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeePositionProjection\nHC01PersonStatus select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonStatusProjection\nTypecase sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tthroughput: (400),\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber = {Person.PersonnelNumber},\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode,\n\t\tJobTitleName,\n\t\tPositionNumber,\n\t\tStandardTitle\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HC01Person')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
+                "[concat(variables('factoryId'), '/datasets/HC01JobCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01EmployeePosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonStatus')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Position')]",
+                "[concat(variables('factoryId'), '/datasets/HC01OrgBusiness')]",
+                "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/FilterDataFlow')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Person",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Person"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "CosmosDB",
+                                "type": "DatasetReference"
+                            },
+                            "name": "Output"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "Filter"
+                        }
+                    ],
+                    "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nHC01Person filter(PersonStatusCode != '0' && PersonStatusCode != '3' && PersonStatusCode != 'Y') ~> Filter\nFilter sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HC01Person')]",
+                "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/CSVDataFlow')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Person",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Person"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonPosition",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonPosition"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01PersonCareerStage",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01PersonCareerStage"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01Employee",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01Employee"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "HC01ReportsToHierarchyTree",
+                                "type": "DatasetReference"
+                            },
+                            "name": "HC01ReportsToHierarchyTree"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DelimitedText",
+                                "type": "DatasetReference"
+                            },
+                            "name": "Output"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "HC01PersonProjection"
+                        },
+                        {
+                            "name": "HC01PersonPositionProjection"
+                        },
+                        {
+                            "name": "HC01PersonCareerStageProjection"
+                        },
+                        {
+                            "name": "HC01EmployeeProjection"
+                        },
+                        {
+                            "name": "Join1"
+                        },
+                        {
+                            "name": "Join2"
+                        },
+                        {
+                            "name": "Join3"
+                        },
+                        {
+                            "name": "Join4"
+                        },
+                        {
+                            "name": "Filter"
+                        },
+                        {
+                            "name": "HC01ReportsToHierarchyTreeProjection"
+                        }
+                    ],
+                    "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tChildcount as integer,\n\t\tDescendantcount as integer,\n\t\tEmail as string,\n\t\tFullname as string,\n\t\tHaschildrenInd as string,\n\t\tLeftNode as integer,\n\t\tNodeType as string,\n\t\tObsoletePCInd as string,\n\t\tParentNodeID as integer,\n\t\tPCOwnerInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPositionNumber as integer,\n\t\tProfitCenterActiveInd as string,\n\t\tProfitCenterCode as string,\n\t\tProfitCenterType as string,\n\t\tRightNode as integer,\n\t\tTreelevel as integer,\n\t\tTreeNodeID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01ReportsToHierarchyTree\nFilter select(mapColumn(\n\t\tLocationAreaCode,\n\t\t{Person.PersonnelNumber} = PersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\t{Person.PersonStatusCode} = PersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\t{PersonPosition.PositionNumber} = PositionNumber,\n\t\tStandardTitle,\n\t\t{PersonPosition.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nHC01PersonCareerStage select(mapColumn(\n\t\t{PersonCareerStage.CareerStageNumber} = CareerStageNumber,\n\t\t{PersonCareerStage.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\t{Employee.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nHC01PersonProjection, HC01PersonPositionProjection join({Person.PersonnelNumber} == {PersonPosition.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join1\nJoin1, HC01PersonCareerStageProjection join({Person.PersonnelNumber} == {PersonCareerStage.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join2\nJoin2, HC01EmployeeProjection join({Person.PersonnelNumber} == {Employee.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join3\nJoin3, HC01ReportsToHierarchyTreeProjection join({Person.PersonnelNumber} == {ReportsToHierarchyTree.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join4\nHC01Person filter(PersonStatusCode != '0' && PersonStatusCode != '3' && PersonStatusCode != 'Y') ~> Filter\nHC01ReportsToHierarchyTree select(mapColumn(\n\t\tChildcount,\n\t\tEmail,\n\t\tHaschildrenInd,\n\t\tNodeType,\n\t\tParentNodeID,\n\t\t{ReportsToHierarchyTree.PersonnelNumber} = PersonnelNumber,\n\t\tTreeNodeID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01ReportsToHierarchyTreeProjection\nJoin4 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber = {Person.PersonnelNumber},\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode = {Person.PersonStatusCode},\n\t\tJobTitleName,\n\t\tPositionNumber = {PersonPosition.PositionNumber},\n\t\tStandardTitle,\n\t\tCareerStageNumber = {PersonCareerStage.CareerStageNumber},\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tChildcount,\n\t\tEmail,\n\t\tHaschildrenInd,\n\t\tNodeType,\n\t\tParentNodeID,\n\t\tTreeNodeID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/HC01Person')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
+                "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
+                "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
+                "[concat(variables('factoryId'), '/datasets/HC01ReportsToHierarchyTree')]",
+                "[concat(variables('factoryId'), '/datasets/DelimitedText')]"
+            ]
         }
-  },
-  "variables": {
-      "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
-  },
-  "resources": [
-      {
-          "name": "[concat(parameters('factoryName'), '/AzureDataLakePipeline')]",
-          "type": "Microsoft.DataFactory/factories/pipelines",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "activities": [
-                  {
-                      "name": "FetchHandShakeValue",
-                      "type": "Lookup",
-                      "dependsOn": [],
-                      "policy": {
-                          "timeout": "7.00:00:00",
-                          "retry": 0,
-                          "retryIntervalInSeconds": 30,
-                          "secureOutput": false,
-                          "secureInput": false
-                      },
-                      "userProperties": [],
-                      "typeProperties": {
-                          "source": {
-                              "type": "ParquetSource",
-                              "storeSettings": {
-                                  "type": "AzureBlobFSReadSettings",
-                                  "recursive": true,
-                                  "wildcardFileName": "*.parquet",
-                                  "enablePartitionDiscovery": false
-                              }
-                          },
-                          "dataset": {
-                              "referenceName": "Handshake",
-                              "type": "DatasetReference",
-                              "parameters": {}
-                          }
-                      }
-                  },
-                  {
-                      "name": "ActualDataFlow",
-                      "type": "ExecuteDataFlow",
-                      "dependsOn": [
-                          {
-                              "activity": "FetchHandShakeValue",
-                              "dependencyConditions": [
-                                  "Succeeded"
-                              ]
-                          }
-                      ],
-                      "policy": {
-                          "timeout": "7.00:00:00",
-                          "retry": 0,
-                          "retryIntervalInSeconds": 30,
-                          "secureOutput": false,
-                          "secureInput": false
-                      },
-                      "userProperties": [],
-                      "typeProperties": {
-                          "dataflow": {
-                              "referenceName": "CSVDataFlow",
-                              "type": "DataFlowReference",
-                              "parameters": {},
-                              "datasetParameters": {
-                                  "HC01Person": {
-                                      "HandShakeValue": {
-                                          "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
-                                          "type": "Expression"
-                                      }
-                                  },
-                                  "HC01PersonPosition": {
-                                      "HandShakeValue": {
-                                          "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
-                                          "type": "Expression"
-                                      }
-                                  },
-                                  "HC01PersonCareerStage": {
-                                      "HandShakeValue": {
-                                          "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
-                                          "type": "Expression"
-                                      }
-                                  },
-                                  "HC01Employee": {
-                                      "HandShakeValue": {
-                                          "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
-                                          "type": "Expression"
-                                      }
-                                  },
-                                  "HC01ReportsToHierarchyTree": {
-                                      "HandShakeValue": {
-                                          "value": "@activity('FetchHandShakeValue').output.firstRow.LatestFolderName",
-                                          "type": "Expression"
-                                      }
-                                  },
-                                  "Output": {}
-                              }
-                          },
-                          "staging": {},
-                          "compute": {
-                              "coreCount": 8,
-                              "computeType": "MemoryOptimized"
-                          }
-                      }
-                  }
-              ],
-              "annotations": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/datasets/Handshake')]",
-              "[concat(variables('factoryId'), '/dataflows/CSVDataFlow')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/Handshake')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "HC01/Handshake",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01Person')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01Person/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/CosmosDB')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "Cosmos_DB",
-                  "type": "LinkedServiceReference"
-              },
-              "annotations": [],
-              "type": "CosmosDbSqlApiCollection",
-              "schema": {},
-              "typeProperties": {
-                  "collectionName": {
-                      "value": "DataLake",
-                      "type": "Expression"
-                  }
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/Cosmos_DB')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01PersonCareerStage')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01PersonCareerStage/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01Employee')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01Employee/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01PersonPosition')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01PersonPosition/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01JobCareerStage')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01JobCareerStage/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01EmployeePosition')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01EmployeePosition/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01PersonStatus')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01PersonStatus/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01Position')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01Position/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01OrgBusiness')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01OrgBusiness/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01StaffingResourceType')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01StaffingResourceType/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HC01ReportsToHierarchyTree')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "HR_Data_Lake",
-                  "type": "LinkedServiceReference"
-              },
-              "parameters": {
-                  "HandShakeValue": {
-                      "type": "string"
-                  }
-              },
-              "annotations": [],
-              "type": "Parquet",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobFSLocation",
-                      "folderPath": {
-                          "value": "@concat('HC01/HC01ReportsToHierarchyTree/Full/', dataset().HandShakeValue)",
-                          "type": "Expression"
-                      },
-                      "fileSystem": {
-                          "value": "publish",
-                          "type": "Expression"
-                      }
-                  },
-                  "compressionCodec": "snappy"
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/HR_Data_Lake')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/DelimitedText')]",
-          "type": "Microsoft.DataFactory/factories/datasets",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "linkedServiceName": {
-                  "referenceName": "AzureBlobStorage",
-                  "type": "LinkedServiceReference"
-              },
-              "annotations": [],
-              "type": "DelimitedText",
-              "typeProperties": {
-                  "location": {
-                      "type": "AzureBlobStorageLocation",
-                      "container": {
-                          "value": "personnelnumberjoin",
-                          "type": "Expression"
-                      }
-                  },
-                  "columnDelimiter": ",",
-                  "escapeChar": "\\",
-                  "quoteChar": "\""
-              },
-              "schema": []
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/trigger1')]",
-          "type": "Microsoft.DataFactory/factories/triggers",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "annotations": [],
-              "runtimeState": "Started",
-              "pipelines": [
-                  {
-                      "pipelineReference": {
-                          "referenceName": "AzureDataLakePipeline",
-                          "type": "PipelineReference"
-                      },
-                      "parameters": {}
-                  }
-              ],
-              "type": "ScheduleTrigger",
-              "typeProperties": {
-                  "recurrence": {
-                      "frequency": "Hour",
-                      "interval": 12,
-                      "startTime": "2020-04-29T23:12:00Z",
-                      "endTime": "2020-04-30T23:12:00Z",
-                      "timeZone": "UTC"
-                  }
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/pipelines/AzureDataLakePipeline')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/HR_Data_Lake')]",
-          "type": "Microsoft.DataFactory/factories/linkedServices",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "annotations": [],
-              "type": "AzureBlobFS",
-              "typeProperties": {
-                  "url": "[parameters('dataLakeStorageUrl')]",
-                  "tenant": "[parameters('tenantId')]",
-                  "servicePrincipalId": "[parameters('servicePrincipalId')]",
-                  "servicePrincipalKey": {
-                      "type": "SecureString",
-                      "value": "[parameters('servicePrincipalKey')]"
-                  }
-              }
-          },
-          "dependsOn": []
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/Cosmos_DB')]",
-          "type": "Microsoft.DataFactory/factories/linkedServices",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "annotations": [],
-              "type": "CosmosDb",
-              "typeProperties": {
-                  "connectionString": "[parameters('Cosmos_DB_connectionString')]"
-              }
-          },
-          "dependsOn": []
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
-          "type": "Microsoft.DataFactory/factories/linkedServices",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "annotations": [],
-              "type": "AzureBlobStorage",
-              "typeProperties": {
-                  "connectionString": "test"
-              }
-          },
-          "dependsOn": []
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/ActualDataFlow')]",
-          "type": "Microsoft.DataFactory/factories/dataflows",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "type": "MappingDataFlow",
-              "typeProperties": {
-                  "sources": [
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Person",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Person"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Employee",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Employee"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonStatus",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonStatus"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonPosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonPosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01JobCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01JobCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01EmployeePosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01EmployeePosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Position",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Position"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01OrgBusiness",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01OrgBusiness"
-                      }
-                  ],
-                  "sinks": [
-                      {
-                          "dataset": {
-                              "referenceName": "CosmosDB",
-                              "type": "DatasetReference"
-                          },
-                          "name": "Output"
-                      }
-                  ],
-                  "transformations": [
-                      {
-                          "name": "HC01PersonProjection"
-                      },
-                      {
-                          "name": "Typecase"
-                      },
-                      {
-                          "name": "HC01PersonCareerStageProjection"
-                      },
-                      {
-                          "name": "JoinOne"
-                      },
-                      {
-                          "name": "HC01EmployeeProjection"
-                      },
-                      {
-                          "name": "JoinTwo"
-                      },
-                      {
-                          "name": "HC01PersonStatusProjection"
-                      },
-                      {
-                          "name": "JoinThree"
-                      },
-                      {
-                          "name": "HC01PersonPositionProjection"
-                      },
-                      {
-                          "name": "JoinFour"
-                      },
-                      {
-                          "name": "HC01JobCareerStageProjection"
-                      },
-                      {
-                          "name": "JoinFive"
-                      },
-                      {
-                          "name": "HC01EmployeePositionProjection"
-                      },
-                      {
-                          "name": "JoinSix"
-                      },
-                      {
-                          "name": "HC01PositionProjection"
-                      },
-                      {
-                          "name": "JoinSeven"
-                      },
-                      {
-                          "name": "HC01OrgBusinessProjection"
-                      },
-                      {
-                          "name": "JoinEight"
-                      }
-                  ],
-                  "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tPersonStatusCode as string,\n\t\tPersonStatusDesc as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonStatus\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tCareerStageNumber as integer,\n\t\tCareerStageProfileNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPayScaleAreaCode as string,\n\t\tPayScaleStockLevelNbr as string,\n\t\tPayScaleTypeCode as string,\n\t\tStandardTitleNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01JobCareerStage\nsource(output(\n\t\tIncrementalPositionInd as string,\n\t\tManagerOfManagersInd as string,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tProjectCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tSupervisorInd as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01EmployeePosition\nsource(output(\n\t\tAcquisitionPositionTypeCode as string,\n\t\tApprovedInd as string,\n\t\tAttribute1Code as string,\n\t\tAttribute2Code as string,\n\t\tCanadaNOCCode as string,\n\t\tClosedPositionInd as string,\n\t\tCompanyCode as string,\n\t\tCostCenterCode as string,\n\t\tCSCategoryCode as string,\n\t\tIncentivePlanTypeCode as string,\n\t\tJobFunctionCode as string,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tOnSiteInd as string,\n\t\tOpenPositionInd as string,\n\t\tOrgBusinessID as integer,\n\t\tOutsourcedIndicator as string,\n\t\tPositionClassCode as string,\n\t\tPositionEffDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tPositionPersonGroupCode as string,\n\t\tPositionPersonSubGroupCode as string,\n\t\tPositionToDate as timestamp,\n\t\tPositionWFPInd as string,\n\t\tProjectCode as string,\n\t\tQualifier2Code as string,\n\t\tQuotaBearingClassification as string,\n\t\tReportsToPositionNbr as integer,\n\t\tResourceJustificationCode as string,\n\t\tResourceType as string,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tWorkLocationCountryCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Position\nsource(output(\n\t\tBusiness as string,\n\t\tOrganization as string,\n\t\tOrgBusinessID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01OrgBusiness\nHC01Person select(mapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nJoinEight derive(PersonnelNumber = toString(HC01PersonProjection@PersonnelNumber),\n\t\tPersonStatusCode = toString(HC01PersonStatusProjection@PersonStatusCode),\n\t\tCareerStageNumber = toString(HC01JobCareerStageProjection@CareerStageNumber),\n\t\tPositionNumber = toString(HC01PersonPositionProjection@PositionNumber),\n\t\tOrgBusinessID = toString(HC01OrgBusinessProjection@OrgBusinessID)) ~> Typecase\nHC01PersonCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01PersonProjection, HC01PersonCareerStageProjection join(HC01PersonProjection@PersonnelNumber == HC01PersonCareerStageProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinOne\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nJoinOne, HC01EmployeeProjection join(HC01PersonProjection@PersonnelNumber == HC01EmployeeProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinTwo\nHC01PersonStatus select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonStatusProjection\nJoinTwo, HC01PersonStatusProjection join(HC01PersonProjection@PersonStatusCode == HC01PersonStatusProjection@PersonStatusCode,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinThree\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\tPersonnelNumber,\n\t\tPositionNumber,\n\t\tStandardTitle\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nJoinThree, HC01PersonPositionProjection join(HC01PersonProjection@PersonnelNumber == HC01PersonPositionProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinFour\nHC01JobCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPayScaleStockLevelNbr\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01JobCareerStageProjection\nJoinFour, HC01JobCareerStageProjection join(HC01PersonCareerStageProjection@CareerStageNumber == HC01JobCareerStageProjection@CareerStageNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinFive\nHC01EmployeePosition select(mapColumn(\n\t\tPositionNumber,\n\t\tSupervisorInd\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeePositionProjection\nJoinFive, HC01EmployeePositionProjection join(HC01PersonPositionProjection@PositionNumber == HC01EmployeePositionProjection@PositionNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinSix\nHC01Position select(mapColumn(\n\t\tOrgBusinessID,\n\t\tPositionNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PositionProjection\nJoinSix, HC01PositionProjection join(HC01PersonPositionProjection@PositionNumber == HC01PositionProjection@PositionNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinSeven\nHC01OrgBusiness select(mapColumn(\n\t\tBusiness,\n\t\tOrganization,\n\t\tOrgBusinessID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01OrgBusinessProjection\nJoinSeven, HC01OrgBusinessProjection join(HC01PositionProjection@OrgBusinessID == HC01OrgBusinessProjection@OrgBusinessID,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinEight\nTypecase sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tthroughput: (400),\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tid = PersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode,\n\t\tCareerStageNumber,\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tPersonStatusDesc,\n\t\tJobTitleName,\n\t\tPositionNumber,\n\t\tStandardTitle,\n\t\tPayScaleStockLevelNbr,\n\t\tSupervisorInd,\n\t\tOrgBusinessID,\n\t\tBusiness,\n\t\tOrganization\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/datasets/HC01Person')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonStatus')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01JobCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01EmployeePosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Position')]",
-              "[concat(variables('factoryId'), '/datasets/HC01OrgBusiness')]",
-              "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/TestDataFlow')]",
-          "type": "Microsoft.DataFactory/factories/dataflows",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "type": "MappingDataFlow",
-              "typeProperties": {
-                  "sources": [
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Person",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Person"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Employee",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Employee"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonStatus",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonStatus"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonPosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonPosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01JobCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01JobCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01EmployeePosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01EmployeePosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Position",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Position"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01OrgBusiness",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01OrgBusiness"
-                      }
-                  ],
-                  "sinks": [
-                      {
-                          "dataset": {
-                              "referenceName": "CosmosDB",
-                              "type": "DatasetReference"
-                          },
-                          "name": "Output"
-                      }
-                  ],
-                  "transformations": [
-                      {
-                          "name": "HC01PersonProjection"
-                      },
-                      {
-                          "name": "Typecase"
-                      },
-                      {
-                          "name": "HC01PersonCareerStageProjection"
-                      },
-                      {
-                          "name": "JoinOne"
-                      },
-                      {
-                          "name": "HC01EmployeeProjection"
-                      },
-                      {
-                          "name": "JoinTwo"
-                      },
-                      {
-                          "name": "HC01PersonStatusProjection"
-                      },
-                      {
-                          "name": "HC01PersonPositionProjection"
-                      },
-                      {
-                          "name": "HC01JobCareerStageProjection"
-                      },
-                      {
-                          "name": "HC01EmployeePositionProjection"
-                      },
-                      {
-                          "name": "HC01PositionProjection"
-                      },
-                      {
-                          "name": "HC01OrgBusinessProjection"
-                      }
-                  ],
-                  "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tPersonStatusCode as string,\n\t\tPersonStatusDesc as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonStatus\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tCareerStageNumber as integer,\n\t\tCareerStageProfileNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPayScaleAreaCode as string,\n\t\tPayScaleStockLevelNbr as string,\n\t\tPayScaleTypeCode as string,\n\t\tStandardTitleNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01JobCareerStage\nsource(output(\n\t\tIncrementalPositionInd as string,\n\t\tManagerOfManagersInd as string,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tProjectCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tSupervisorInd as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01EmployeePosition\nsource(output(\n\t\tAcquisitionPositionTypeCode as string,\n\t\tApprovedInd as string,\n\t\tAttribute1Code as string,\n\t\tAttribute2Code as string,\n\t\tCanadaNOCCode as string,\n\t\tClosedPositionInd as string,\n\t\tCompanyCode as string,\n\t\tCostCenterCode as string,\n\t\tCSCategoryCode as string,\n\t\tIncentivePlanTypeCode as string,\n\t\tJobFunctionCode as string,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tOnSiteInd as string,\n\t\tOpenPositionInd as string,\n\t\tOrgBusinessID as integer,\n\t\tOutsourcedIndicator as string,\n\t\tPositionClassCode as string,\n\t\tPositionEffDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tPositionPersonGroupCode as string,\n\t\tPositionPersonSubGroupCode as string,\n\t\tPositionToDate as timestamp,\n\t\tPositionWFPInd as string,\n\t\tProjectCode as string,\n\t\tQualifier2Code as string,\n\t\tQuotaBearingClassification as string,\n\t\tReportsToPositionNbr as integer,\n\t\tResourceJustificationCode as string,\n\t\tResourceType as string,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tWorkLocationCountryCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Position\nsource(output(\n\t\tBusiness as string,\n\t\tOrganization as string,\n\t\tOrgBusinessID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01OrgBusiness\nHC01Person select(mapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nJoinTwo derive(PersonnelNumber = toString(HC01PersonProjection@PersonnelNumber)) ~> Typecase\nHC01PersonCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01PersonProjection, HC01PersonCareerStageProjection join(HC01PersonProjection@PersonnelNumber == HC01PersonCareerStageProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinOne\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tPersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nJoinOne, HC01EmployeeProjection join(HC01PersonProjection@PersonnelNumber == HC01EmployeeProjection@PersonnelNumber,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> JoinTwo\nHC01PersonStatus select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonStatusProjection\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\tPersonnelNumber,\n\t\tPositionNumber,\n\t\tStandardTitle\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nHC01JobCareerStage select(mapColumn(\n\t\tCareerStageNumber,\n\t\tPayScaleStockLevelNbr\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01JobCareerStageProjection\nHC01EmployeePosition select(mapColumn(\n\t\tPositionNumber,\n\t\tSupervisorInd\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeePositionProjection\nHC01Position select(mapColumn(\n\t\tOrgBusinessID,\n\t\tPositionNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PositionProjection\nHC01OrgBusiness select(mapColumn(\n\t\tBusiness,\n\t\tOrganization,\n\t\tOrgBusinessID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01OrgBusinessProjection\nTypecase sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tthroughput: (5000),\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode,\n\t\tCareerStageNumber,\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/datasets/HC01Person')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonStatus')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01JobCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01EmployeePosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Position')]",
-              "[concat(variables('factoryId'), '/datasets/HC01OrgBusiness')]",
-              "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/Test')]",
-          "type": "Microsoft.DataFactory/factories/dataflows",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "type": "MappingDataFlow",
-              "typeProperties": {
-                  "sources": [
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Person",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Person"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonPosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonPosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Employee",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Employee"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01JobCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01JobCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01EmployeePosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01EmployeePosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonStatus",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonStatus"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Position",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Position"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01OrgBusiness",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01OrgBusiness"
-                      }
-                  ],
-                  "sinks": [
-                      {
-                          "dataset": {
-                              "referenceName": "CosmosDB",
-                              "type": "DatasetReference"
-                          },
-                          "name": "Output"
-                      }
-                  ],
-                  "transformations": [
-                      {
-                          "name": "HC01PersonProjection"
-                      },
-                      {
-                          "name": "HC01PersonPositionProjection"
-                      },
-                      {
-                          "name": "HC01PersonCareerStageProjection"
-                      },
-                      {
-                          "name": "HC01EmployeeProjection"
-                      },
-                      {
-                          "name": "Join1"
-                      },
-                      {
-                          "name": "Join2"
-                      },
-                      {
-                          "name": "Join3"
-                      },
-                      {
-                          "name": "Typecase"
-                      },
-                      {
-                          "name": "HC01JobCareerStageProjection"
-                      },
-                      {
-                          "name": "Join4"
-                      },
-                      {
-                          "name": "HC01EmployeePositionProjection"
-                      },
-                      {
-                          "name": "HC01PersonStatusProjection"
-                      }
-                  ],
-                  "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: (500),\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: (500),\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 500,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 500,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tCareerStageNumber as integer,\n\t\tCareerStageProfileNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPayScaleAreaCode as string,\n\t\tPayScaleStockLevelNbr as string,\n\t\tPayScaleTypeCode as string,\n\t\tStandardTitleNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 500,\n\tformat: 'parquet') ~> HC01JobCareerStage\nsource(output(\n\t\tIncrementalPositionInd as string,\n\t\tManagerOfManagersInd as string,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tProjectCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tSupervisorInd as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01EmployeePosition\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01PersonStatus\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01Position\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tlimit: 100,\n\tformat: 'parquet') ~> HC01OrgBusiness\nHC01Person select(mapColumn(\n\t\tLocationAreaCode,\n\t\t{Person.PersonnelNumber} = PersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\tPositionNumber,\n\t\tStandardTitle,\n\t\t{PersonPosition.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nHC01PersonCareerStage select(mapColumn(\n\t\t{PersonCareerStage.CareerStageNumber} = CareerStageNumber,\n\t\t{PersonCareerStage.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\t{Employee.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nHC01PersonProjection, HC01PersonPositionProjection join({Person.PersonnelNumber} == {PersonPosition.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join1\nJoin1, HC01PersonCareerStageProjection join({Person.PersonnelNumber} == {PersonCareerStage.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join2\nJoin2, HC01EmployeeProjection join({Person.PersonnelNumber} == {Employee.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join3\nJoin1 derive({Person.PersonnelNumber} = toString({Person.PersonnelNumber})) ~> Typecase\nHC01JobCareerStage select(mapColumn(\n\t\t{JobCareerStage.CareerStageNumber} = CareerStageNumber,\n\t\tPayScaleStockLevelNbr\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01JobCareerStageProjection\nJoin3, HC01JobCareerStageProjection join({PersonCareerStage.CareerStageNumber} == {JobCareerStage.CareerStageNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join4\nHC01EmployeePosition select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeePositionProjection\nHC01PersonStatus select(skipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonStatusProjection\nTypecase sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tthroughput: (400),\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber = {Person.PersonnelNumber},\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode,\n\t\tJobTitleName,\n\t\tPositionNumber,\n\t\tStandardTitle\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/datasets/HC01Person')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
-              "[concat(variables('factoryId'), '/datasets/HC01JobCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01EmployeePosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonStatus')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Position')]",
-              "[concat(variables('factoryId'), '/datasets/HC01OrgBusiness')]",
-              "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/FilterDataFlow')]",
-          "type": "Microsoft.DataFactory/factories/dataflows",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "type": "MappingDataFlow",
-              "typeProperties": {
-                  "sources": [
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Person",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Person"
-                      }
-                  ],
-                  "sinks": [
-                      {
-                          "dataset": {
-                              "referenceName": "CosmosDB",
-                              "type": "DatasetReference"
-                          },
-                          "name": "Output"
-                      }
-                  ],
-                  "transformations": [
-                      {
-                          "name": "Filter"
-                      }
-                  ],
-                  "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nHC01Person filter(PersonStatusCode != '0' && PersonStatusCode != '3' && PersonStatusCode != 'Y') ~> Filter\nFilter sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'document',\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/datasets/HC01Person')]",
-              "[concat(variables('factoryId'), '/datasets/CosmosDB')]"
-          ]
-      },
-      {
-          "name": "[concat(parameters('factoryName'), '/CSVDataFlow')]",
-          "type": "Microsoft.DataFactory/factories/dataflows",
-          "apiVersion": "2018-06-01",
-          "properties": {
-              "type": "MappingDataFlow",
-              "typeProperties": {
-                  "sources": [
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Person",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Person"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonPosition",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonPosition"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01PersonCareerStage",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01PersonCareerStage"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01Employee",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01Employee"
-                      },
-                      {
-                          "dataset": {
-                              "referenceName": "HC01ReportsToHierarchyTree",
-                              "type": "DatasetReference"
-                          },
-                          "name": "HC01ReportsToHierarchyTree"
-                      }
-                  ],
-                  "sinks": [
-                      {
-                          "dataset": {
-                              "referenceName": "DelimitedText",
-                              "type": "DatasetReference"
-                          },
-                          "name": "Output"
-                      }
-                  ],
-                  "transformations": [
-                      {
-                          "name": "HC01PersonProjection"
-                      },
-                      {
-                          "name": "HC01PersonPositionProjection"
-                      },
-                      {
-                          "name": "HC01PersonCareerStageProjection"
-                      },
-                      {
-                          "name": "HC01EmployeeProjection"
-                      },
-                      {
-                          "name": "Join1"
-                      },
-                      {
-                          "name": "Join2"
-                      },
-                      {
-                          "name": "Join3"
-                      },
-                      {
-                          "name": "Join4"
-                      },
-                      {
-                          "name": "Filter"
-                      },
-                      {
-                          "name": "HC01ReportsToHierarchyTreeProjection"
-                      }
-                  ],
-                  "script": "source(output(\n\t\tAcquiredCompanyPersonID as string,\n\t\tAddressBookDifferentiatorName as string,\n\t\tAddressBookTitleDesc as string,\n\t\tAlternateEmail as string,\n\t\tBuildingID as integer,\n\t\tBusinessFullName as string,\n\t\tBusinessLastName as string,\n\t\tEmailName as string,\n\t\tFirstName as string,\n\t\tFullName as string,\n\t\tGDPRActionInd as string,\n\t\tLastName as string,\n\t\tLocalLanguageFirstName as string,\n\t\tLocalLanguageLastName as string,\n\t\tLocationAreaCode as string,\n\t\tLocationAreaDetail as string,\n\t\tLocationCity as string,\n\t\tMiddleName as string,\n\t\tMobileBldgAssociationID as integer,\n\t\tOrgProject as string,\n\t\tPersonnelAreaCode as string,\n\t\tPersonnelNumber as integer,\n\t\tPersonnelSubAreaCode as string,\n\t\tPersonStatusCode as string,\n\t\tPreferredFirstName as string,\n\t\tRoomNumber as string,\n\t\tSecondLastName as string,\n\t\tSuffixName as string,\n\t\tUSCitizenGCHolderInd as string,\n\t\tUseBusinessLastNameInd as string,\n\t\tWorkFaxNbr as string,\n\t\tWorkPhoneNbr as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Person\nsource(output(\n\t\tBuildingAccessInd as string,\n\t\tCompanyCode as string,\n\t\tCompanyEffDate as timestamp,\n\t\tCostCenterCode as string,\n\t\tCSConsecutiveAssignmentDaysQty as integer,\n\t\tCSDaysAvailableQty as integer,\n\t\tCSDurationWorkDays as integer,\n\t\tCSMaximumEndDate as timestamp,\n\t\tEarliestReturnDateExt as timestamp,\n\t\tJobNumber as integer,\n\t\tJobTitleName as string,\n\t\tMaximumEndDateExt as timestamp,\n\t\tNetworkAccessInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPolicyCalcStartDateExt as timestamp,\n\t\tPositionEntryDate as timestamp,\n\t\tPositionFromDate as timestamp,\n\t\tPositionName as string,\n\t\tPositionNumber as integer,\n\t\tReportsToEmailName as string,\n\t\tReportsToFullName as string,\n\t\tReportsToPersonnelNbr as integer,\n\t\tStaffingResourceTypeGroupCode as string,\n\t\tStandardTitle as string,\n\t\tStandardTitleNumber as integer,\n\t\tTimeAvailableExt as integer,\n\t\tTimeUsedExt as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonPosition\nsource(output(\n\t\tAssignmentTypeDesc as string,\n\t\tCareerStageNumber as integer,\n\t\tFromDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tToDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01PersonCareerStage\nsource(output(\n\t\tAcquiredCompanyHireDate as timestamp,\n\t\tApplicantCode as string,\n\t\tBusinessCardTitleName as string,\n\t\tCompanyStartDate as timestamp,\n\t\tCompressedWorkweekInd as string,\n\t\tCountryStartDate as timestamp,\n\t\tEmployeePhotoConsentInd as string,\n\t\tFirstMSJVHireDate as timestamp,\n\t\tFirstRegularHireDate as timestamp,\n\t\tFlexTimeInd as string,\n\t\tInternCoopEstEndDate as timestamp,\n\t\tInternCoopEstEndReminderDate as timestamp,\n\t\tLastDayWorkedDate as timestamp,\n\t\tMobilePhoneOneNbr as string,\n\t\tMobilePhoneTwoNbr as string,\n\t\tMonthsAsManager as integer,\n\t\tMonthsAtMS as integer,\n\t\tMostRecentHireDate as timestamp,\n\t\tMSRegularOrgSize as integer,\n\t\tPagerOneNbr as string,\n\t\tPayrollIdNbr as string,\n\t\tPayScaleAreaCode as string,\n\t\tPBEEstimatedEndDate as timestamp,\n\t\tPBEEstimatedEndReminderDate as timestamp,\n\t\tPersonnelNumber as integer,\n\t\tPrimaryContactInd as string,\n\t\tRetailBenefitsEligibilityDate as timestamp,\n\t\tServiceAwardDate as timestamp,\n\t\tTeleworkerDaysWorkedAtHome as integer,\n\t\tTerminationDate as timestamp,\n\t\tVacationServiceDate as timestamp,\n\t\tWorkScheduleRuleName as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01Employee\nsource(output(\n\t\tChildcount as integer,\n\t\tDescendantcount as integer,\n\t\tEmail as string,\n\t\tFullname as string,\n\t\tHaschildrenInd as string,\n\t\tLeftNode as integer,\n\t\tNodeType as string,\n\t\tObsoletePCInd as string,\n\t\tParentNodeID as integer,\n\t\tPCOwnerInd as string,\n\t\tPersonnelNumber as integer,\n\t\tPositionNumber as integer,\n\t\tProfitCenterActiveInd as string,\n\t\tProfitCenterCode as string,\n\t\tProfitCenterType as string,\n\t\tRightNode as integer,\n\t\tTreelevel as integer,\n\t\tTreeNodeID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'parquet') ~> HC01ReportsToHierarchyTree\nFilter select(mapColumn(\n\t\tLocationAreaCode,\n\t\t{Person.PersonnelNumber} = PersonnelNumber,\n\t\tPersonnelSubAreaCode,\n\t\t{Person.PersonStatusCode} = PersonStatusCode\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonProjection\nHC01PersonPosition select(mapColumn(\n\t\tJobTitleName,\n\t\t{PersonPosition.PositionNumber} = PositionNumber,\n\t\tStandardTitle,\n\t\t{PersonPosition.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonPositionProjection\nHC01PersonCareerStage select(mapColumn(\n\t\t{PersonCareerStage.CareerStageNumber} = CareerStageNumber,\n\t\t{PersonCareerStage.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01PersonCareerStageProjection\nHC01Employee select(mapColumn(\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\t{Employee.PersonnelNumber} = PersonnelNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01EmployeeProjection\nHC01PersonProjection, HC01PersonPositionProjection join({Person.PersonnelNumber} == {PersonPosition.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join1\nJoin1, HC01PersonCareerStageProjection join({Person.PersonnelNumber} == {PersonCareerStage.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join2\nJoin2, HC01EmployeeProjection join({Person.PersonnelNumber} == {Employee.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join3\nJoin3, HC01ReportsToHierarchyTreeProjection join({Person.PersonnelNumber} == {ReportsToHierarchyTree.PersonnelNumber},\n\tjoinType:'left',\n\tbroadcast: 'auto')~> Join4\nHC01Person filter(PersonStatusCode != '0' && PersonStatusCode != '3' && PersonStatusCode != 'Y') ~> Filter\nHC01ReportsToHierarchyTree select(mapColumn(\n\t\tChildcount,\n\t\tEmail,\n\t\tHaschildrenInd,\n\t\tNodeType,\n\t\tParentNodeID,\n\t\t{ReportsToHierarchyTree.PersonnelNumber} = PersonnelNumber,\n\t\tTreeNodeID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> HC01ReportsToHierarchyTreeProjection\nJoin4 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tmapColumn(\n\t\tLocationAreaCode,\n\t\tPersonnelNumber = {Person.PersonnelNumber},\n\t\tPersonnelSubAreaCode,\n\t\tPersonStatusCode = {Person.PersonStatusCode},\n\t\tJobTitleName,\n\t\tPositionNumber = {PersonPosition.PositionNumber},\n\t\tStandardTitle,\n\t\tCareerStageNumber = {PersonCareerStage.CareerStageNumber},\n\t\tFirstRegularHireDate,\n\t\tMostRecentHireDate,\n\t\tChildcount,\n\t\tEmail,\n\t\tHaschildrenInd,\n\t\tNodeType,\n\t\tParentNodeID,\n\t\tTreeNodeID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Output"
-              }
-          },
-          "dependsOn": [
-              "[concat(variables('factoryId'), '/datasets/HC01Person')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonPosition')]",
-              "[concat(variables('factoryId'), '/datasets/HC01PersonCareerStage')]",
-              "[concat(variables('factoryId'), '/datasets/HC01Employee')]",
-              "[concat(variables('factoryId'), '/datasets/HC01ReportsToHierarchyTree')]",
-              "[concat(variables('factoryId'), '/datasets/DelimitedText')]"
-          ]
-      }
-  ]
-}
+    ]
+  }  
