@@ -1,0 +1,211 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    
+    "solutionAbbreviation": {
+      "type": "string",
+      "defaultValue": "test",
+      "minLength": 2,
+      "maxLength": 3,
+      "metadata": {
+        "description": "Enter an abbreviation for the solution."
+      }
+    },
+    "resourceGroupClassification": {
+      "type": "string",
+      "defaultValue": "da",
+      "metadata": {
+        "description": "Classify the types of resources in this resource group."
+      }
+    },
+    "environmentAbbreviation": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 4,
+      "metadata": {
+        "description": "Enter an abbreviation for the environment."
+      }
+    },
+    "tenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Tenant id."
+      }
+    },
+    
+    "cosmosLocation": {
+      "type": "string",
+      "defaultValue": "West US 2",
+      "allowedValues": [
+        "South Central US",
+        "West Europe",
+        "East US",
+        "North Europe",
+        "West US 2"
+      ],
+      "metadata": {
+        "description": "Location for the Cosmos DB account."
+      }
+    },
+    "cosmosPrimaryRegion": {
+      "type": "string",
+      "defaultValue": "West US 2",
+      "metadata": {
+        "description": "The primary replica region for the Cosmos DB account."
+      }
+    },
+    "cosmosSecondaryRegion": {
+      "type": "string",
+      "defaultValue": "East US",
+      "metadata": {
+        "description": "The secondary replica region for the Cosmos DB account."
+      }
+    },
+    "cosmosDefaultConsistencyLevel": {
+      "type": "string",
+      "defaultValue": "Session",
+      "allowedValues": [
+        "Eventual",
+        "ConsistentPrefix",
+        "Session",
+        "BoundedStaleness",
+        "Strong"
+      ],
+      "metadata": {
+        "description": "The default consistency level of the Cosmos DB account."
+      }
+    },
+    "cosmosAutomaticFailover": {
+      "type": "bool",
+      "defaultValue": true,
+      "allowedValues": [true, false],
+      "metadata": {
+        "description": "Enable automatic failover for regions. Ignored when Multi-Master is enabled"
+      }
+    },
+    
+    
+   
+    "cosmosSqlDBAccount": {
+			"type": "string",
+			"defaultValue": "[concat(parameters('solutionAbbreviation'), '-onecatalog-', parameters('environmentAbbreviation'))]",
+			"metadata": {
+			  "description": "The name of Azure Cosmos DB SQL API account"
+			}
+		},
+	    "cosmosSqlContainer": {
+			"type": "string",
+			"defaultValue": "DataLake",
+			"metadata": {
+			  "description": "The name of Azure Cosmos DB SQL API container"
+			}
+	    },
+		"cosmosSqlDatabase": {
+			"type": "string",
+			"defaultValue": "[concat(parameters('solutionAbbreviation'), '-', parameters('resourceGroupClassification'), '-', parameters('environmentAbbreviation'))]",
+			"metadata": {
+			  "description": "The name of Azure Cosmos DB SQL API database"
+			}
+		},
+    "cosmosSqlThroughput": {
+      "type": "int",
+      "defaultValue": 400,
+      "minValue": 400,
+      "maxValue": 4000,
+      "metadata": {
+          "description": "Maximum throughput when using Autoscale Throughput Policy for the container"
+      }
+    }
+    
+    
+    
+    
+  },
+  "variables": {
+    "resourceGroupName": "[concat(parameters('solutionAbbreviation'), '-', parameters('resourceGroupClassification'), '-', parameters('environmentAbbreviation'))]",
+    "throughputPolicy": {
+      "Autoscale": {
+          "ProvisionedThroughputSettings": "[concat('{\"maxThroughput\":\"', parameters('cosmosSqlThroughput'), '\"}')]"
+      }            
+    }
+  },
+  "resources": [
+    
+    
+    
+    {
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-05-01",
+			"name": "cosmosSqlDBAccountTemplate",
+			"properties": {
+			  "mode": "Incremental",
+			  "templateLink": {
+				"uri": "https://raw.githubusercontent.com/xyz92/ARMTemplates/master/cosmosSqlDBAccount.json",
+				"contentVersion": "1.0.0.0"
+			  },
+			  "parameters": {
+				"accountName": {
+				  "value": "[parameters('cosmosSqlDBAccount')]"
+				},
+				"location": {
+				  "value": "[parameters('cosmosLocation')]"
+				},
+				"primaryRegion": {
+				  "value": "[parameters('cosmosPrimaryRegion')]"
+				},
+				"secondaryRegion": {
+				  "value": "[parameters('cosmosSecondaryRegion')]"
+				},
+				"defaultConsistencyLevel": {
+				  "value": "[parameters('cosmosDefaultConsistencyLevel')]"
+				},
+				"automaticFailover": {
+				  "value": "[parameters('cosmosAutomaticFailover')]"
+				}
+			  }
+			}
+		},
+		{
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-05-01",
+			"name": "cosmosSqlDBTemplate",
+			"properties": {
+			"mode": "Incremental",
+			"templateLink": {
+			  "uri": "https://raw.githubusercontent.com/xyz92/ARMTemplates/master/cosmosSqlDB.json",
+			  "contentVersion": "1.0.0.0"
+			},
+			"parameters": {
+			  "accountName": {
+				"value": "[parameters('cosmosSqlDBAccount')]"
+			  },
+			  "containerName": {
+				"value": "[parameters('cosmosSqlContainer')]"
+			  },
+			  "databaseName": {
+				"value": "[parameters('cosmosSqlDatabase')]"
+			  },
+			  "databaseThroughput": {
+				"value": "[variables('throughputPolicy').Autoscale]"
+			  }
+			}
+			},
+			"dependsOn": ["Microsoft.Resources/deployments/cosmosSqlDBAccountTemplate"]
+		}
+    
+    
+    
+    
+    
+    
+  ],
+  "outputs": {
+    
+    "cosmosSqlDBPrimaryConnectionString": {
+			"type": "string",
+			"value": "[concat(reference('cosmosSqlDBAccountTemplate').outputs.primaryConnectionString.value, 'Database=', parameters('cosmosSqlDatabase'), ';')]"
+		}
+    
+  }
+}
