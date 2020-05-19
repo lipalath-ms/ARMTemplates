@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "type": "string",      
+      "metadata": {
+        "description": "Storage account alphanumeric name"
+      }
+    },
+    "containerName": {
+      "type": "string",
+      "metadata": {
+          "description": "Name of blob container"
+      }
+    },
+    "sku": {
+      "type": "string",
+      "metadata": {
+        "description": "Enter storage account sku."
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "apiVersion": "2019-04-01",
+      "tags": {
+        "Owner": "[resourceGroup().tags.Owner]",
+        "Env": "[resourceGroup().tags.Env]",
+        "AppId": "[resourceGroup().tags.ComponentId]"
+      },
+      "location": "[resourceGroup().location]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "properties": {
+        "supportsHttpsTrafficOnly": true
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "resources": [
+        {
+            "name": "[concat('default/', parameters('containerName'))]",
+            "type": "blobServices/containers",
+            "apiVersion": "2019-04-01",
+            "dependsOn": [
+                "[parameters('storageAccountName')]"
+            ]
+        }
+    ]
+    }
+  ],
+  "outputs": {
+    "connectionString": {
+      "type": "string",
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('name'), ';AccountKey=', listkeys(resourceId(resourcegroup().name, 'Microsoft.Storage/storageAccounts', parameters('name')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value)]"
+    }
+  }
+}
