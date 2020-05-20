@@ -58,7 +58,7 @@
   "outputs": {
     "connectionString": {
       "type": "string",
-      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('name'), ';AccountKey=', listkeys(resourceId(resourcegroup().name, 'Microsoft.Storage/storageAccounts', parameters('name')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value)]"
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listkeys(resourceId(resourcegroup().name, 'Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value)]"
     }
   }
 }
