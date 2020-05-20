@@ -53,7 +53,7 @@
               "pipelines": [
                   {
                       "pipelineReference": {
-                          "referenceName": "AllLeftOuterJoinsWithCosmosDB",
+                          "referenceName": "Pipeline",
                           "type": "PipelineReference"
                       },
                       "parameters": {}
@@ -71,7 +71,7 @@
               }
           },
           "dependsOn": [
-              "[concat(variables('factoryId'), '/pipelines/AllLeftOuterJoinsWithCosmosDB')]"
+              "[concat(variables('factoryId'), '/pipelines/Pipeline')]"
           ]
       },
       {
