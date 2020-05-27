@@ -26,12 +26,7 @@
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[parameters('storageAccountName')]",
-      "apiVersion": "2019-04-01",
-      "tags": {
-        "Owner": "[resourceGroup().tags.Owner]",
-        "Env": "[resourceGroup().tags.Env]",
-        "AppId": "[resourceGroup().tags.ComponentId]"
-      },
+      "apiVersion": "2019-04-01",      
       "location": "[resourceGroup().location]",
       "kind": "StorageV2",
       "sku": {
