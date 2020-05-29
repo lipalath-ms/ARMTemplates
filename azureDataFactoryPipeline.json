@@ -44,25 +44,6 @@
     },
     "resources": [
         {
-            "name": "[concat(parameters('factoryName'), '/ComputeOptimizedIntegrationRuntime')]",
-            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "type": "Managed",
-                "typeProperties": {
-                    "computeProperties": {
-                        "location": "AutoResolve",
-                        "dataFlowProperties": {
-                            "computeType": "ComputeOptimized",
-                            "coreCount": 8,
-                            "timeToLive": 0
-                        }
-                    }
-                }
-            },
-            "dependsOn": []
-        },
-        {
             "name": "[concat(parameters('factoryName'), '/MemoryOptimizedIntegrationRuntime')]",
             "type": "Microsoft.DataFactory/factories/integrationRuntimes",
             "apiVersion": "2018-06-01",
@@ -73,6 +54,25 @@
                         "location": "AutoResolve",
                         "dataFlowProperties": {
                             "computeType": "MemoryOptimized",
+                            "coreCount": 8,
+                            "timeToLive": 0
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ComputeOptimizedIntegrationRuntime')]",
+            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "Managed",
+                "typeProperties": {
+                    "computeProperties": {
+                        "location": "AutoResolve",
+                        "dataFlowProperties": {
+                            "computeType": "ComputeOptimized",
                             "coreCount": 8,
                             "timeToLive": 0
                         }
@@ -307,38 +307,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/Handshake')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "HRDataLake",
-                    "type": "LinkedServiceReference"
-                },
-                "annotations": [],
-                "type": "Parquet",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "folderPath": {
-                            "value": "HC01/Handshake",
-                            "type": "Expression"
-                        },
-                        "fileSystem": {
-                            "value": "publish",
-                            "type": "Expression"
-                        }
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/HC01Person')]",
+            "name": "[concat(parameters('factoryName'), '/HC01EmployeePosition')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -357,43 +326,7 @@
                     "location": {
                         "type": "AzureBlobFSLocation",
                         "folderPath": {
-                            "value": "@concat('HC01/HC01Person/Full/', dataset().HandShakeValue)",
-                            "type": "Expression"
-                        },
-                        "fileSystem": {
-                            "value": "publish",
-                            "type": "Expression"
-                        }
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/HC01PersonnelAreaSubArea')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "HRDataLake",
-                    "type": "LinkedServiceReference"
-                },
-                "parameters": {
-                    "HandShakeValue": {
-                        "type": "string"
-                    }
-                },
-                "annotations": [],
-                "type": "Parquet",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "folderPath": {
-                            "value": "@concat('HC01/HC01PersonnelAreaSubArea/Full/', dataset().HandShakeValue)",
+                            "value": "@concat('HC01/HC01EmployeePosition/Full/', dataset().HandShakeValue)",
                             "type": "Expression"
                         },
                         "fileSystem": {
@@ -482,7 +415,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/HC01Position')]",
+            "name": "[concat(parameters('factoryName'), '/Handshake')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -490,18 +423,13 @@
                     "referenceName": "HRDataLake",
                     "type": "LinkedServiceReference"
                 },
-                "parameters": {
-                    "HandShakeValue": {
-                        "type": "string"
-                    }
-                },
                 "annotations": [],
                 "type": "Parquet",
                 "typeProperties": {
                     "location": {
                         "type": "AzureBlobFSLocation",
                         "folderPath": {
-                            "value": "@concat('HC01/HC01Position/Full/', dataset().HandShakeValue)",
+                            "value": "HC01/Handshake",
                             "type": "Expression"
                         },
                         "fileSystem": {
@@ -590,7 +518,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/HC01StaffingResourceType')]",
+            "name": "[concat(parameters('factoryName'), '/HC01EmployeeS')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -609,7 +537,43 @@
                     "location": {
                         "type": "AzureBlobFSLocation",
                         "folderPath": {
-                            "value": "@concat('HC01/HC01StaffingResourceType/Full/', dataset().HandShakeValue)",
+                            "value": "@concat('HC01/HC01EmployeeS/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01Person')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HRDataLake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01Person/Full/', dataset().HandShakeValue)",
                             "type": "Expression"
                         },
                         "fileSystem": {
@@ -657,39 +621,26 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/HC01EmployeePosition')]",
+            "name": "[concat(parameters('factoryName'), '/AzureTableStorage')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "HRDataLake",
+                    "referenceName": "AzureTableStorage",
                     "type": "LinkedServiceReference"
                 },
-                "parameters": {
-                    "HandShakeValue": {
-                        "type": "string"
-                    }
-                },
                 "annotations": [],
-                "type": "Parquet",
+                "type": "AzureTable",
+                "schema": [],
                 "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "folderPath": {
-                            "value": "@concat('HC01/HC01EmployeePosition/Full/', dataset().HandShakeValue)",
-                            "type": "Expression"
-                        },
-                        "fileSystem": {
-                            "value": "publish",
-                            "type": "Expression"
-                        }
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
+                    "tableName": {
+                        "value": "@dataset().tableName",
+                        "type": "Expression"
+                    }
+                }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
+                "[concat(variables('factoryId'), '/linkedServices/AzureTableStorage')]"
             ]
         },
         {
@@ -729,7 +680,7 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/HC01EmployeeS')]",
+            "name": "[concat(parameters('factoryName'), '/HC01PersonnelAreaSubArea')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -748,7 +699,7 @@
                     "location": {
                         "type": "AzureBlobFSLocation",
                         "folderPath": {
-                            "value": "@concat('HC01/HC01EmployeeS/Full/', dataset().HandShakeValue)",
+                            "value": "@concat('HC01/HC01PersonnelAreaSubArea/Full/', dataset().HandShakeValue)",
                             "type": "Expression"
                         },
                         "fileSystem": {
@@ -765,31 +716,75 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/AzureTableStorage')]",
+            "name": "[concat(parameters('factoryName'), '/HC01StaffingResourceType')]",
             "type": "Microsoft.DataFactory/factories/datasets",
             "apiVersion": "2018-06-01",
             "properties": {
                 "linkedServiceName": {
-                    "referenceName": "AzureTableStorage",
+                    "referenceName": "HRDataLake",
                     "type": "LinkedServiceReference"
                 },
                 "parameters": {
-                    "tableName": {
+                    "HandShakeValue": {
                         "type": "string"
                     }
                 },
                 "annotations": [],
-                "type": "AzureTable",
-                "schema": [],
+                "type": "Parquet",
                 "typeProperties": {
-                    "tableName": {
-                        "value": "@dataset().tableName",
-                        "type": "Expression"
-                    }
-                }
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01StaffingResourceType/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureTableStorage')]"
+                "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HC01Position')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "HRDataLake",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "HandShakeValue": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "folderPath": {
+                            "value": "@concat('HC01/HC01Position/Full/', dataset().HandShakeValue)",
+                            "type": "Expression"
+                        },
+                        "fileSystem": {
+                            "value": "publish",
+                            "type": "Expression"
+                        }
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
             ]
         },
         {
@@ -799,7 +794,15 @@
             "properties": {
                 "annotations": [],
                 "runtimeState": "Stopped",
-                "pipelines": [],
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "Pipeline",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
                 "type": "ScheduleTrigger",
                 "typeProperties": {
                     "recurrence": {
@@ -818,7 +821,9 @@
                     }
                 }
             },
-            "dependsOn": []
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/Pipeline')]"
+            ]
         },
         {
             "name": "[concat(parameters('factoryName'), '/HRDataLake')]",
@@ -840,12 +845,12 @@
             "dependsOn": []
         },
         {
-            "name": "[concat(parameters('factoryName'), '/AzureTableStorage')]",
+            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
             "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
                 "annotations": [],
-                "type": "AzureTableStorage",
+                "type": "AzureBlobStorage",
                 "typeProperties": {
                     "connectionString": "[parameters('storageAccountConnectionString')]"
                 },
@@ -859,12 +864,12 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
+            "name": "[concat(parameters('factoryName'), '/AzureTableStorage')]",
             "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
                 "annotations": [],
-                "type": "AzureBlobStorage",
+                "type": "AzureTableStorage",
                 "typeProperties": {
                     "connectionString": "[parameters('storageAccountConnectionString')]"
                 },
