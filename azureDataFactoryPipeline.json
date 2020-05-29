@@ -629,6 +629,11 @@
                     "referenceName": "AzureTableStorage",
                     "type": "LinkedServiceReference"
                 },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
                 "annotations": [],
                 "type": "AzureTable",
                 "schema": [],
