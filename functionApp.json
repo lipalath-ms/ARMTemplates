@@ -1,0 +1,109 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Function app name."
+      }
+    },
+    "kind": {
+      "type": "string",
+      "allowedValues": ["functionapp", "linux", "container"],
+      "defaultValue": "functionapp",
+      "metadata": {
+        "description": "Function app kind."
+      }
+    },
+    "location": {
+      "type": "string",
+      "allowedValues": [
+        "South Central US",
+        "West Europe",
+        "East US",
+        "North Europe",
+        "West US 2"
+      ],
+      "metadata": {
+        "description": "Function app location."
+      }
+    },
+    "servicePlanName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Service plan name."
+      }
+    },
+    "appInsightsName": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights name."
+      }
+    },
+    "appInsightsResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group where Application Insights is located."
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage account name."
+      }
+    },
+    "storageAccountResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group where storage account is located."
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "apiVersion": "2018-02-01",
+      "type": "Microsoft.Web/sites",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "kind": "[parameters('kind')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('servicePlanName'))]",
+        "clientAffinityEnabled": false,
+        "httpsOnly": true,
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId(parameters('appInsightsResourceGroup'), 'microsoft.insights/components/', parameters('appInsightsName')), '2015-05-01').InstrumentationKey]"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId(parameters('storageAccountResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value)]"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~3"
+            }
+          ]
+        }
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "tags": {
+        "Owner": "[resourceGroup().tags.Owner]",
+        "Env": "[resourceGroup().tags.Env]",
+        "ComponentId": "[resourceGroup().tags.ComponentId]"
+      }
+    }
+  ],
+  "outputs": {}
+}
