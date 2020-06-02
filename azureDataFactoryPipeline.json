@@ -242,7 +242,7 @@
                             },
                             {
                                 "name": "Destination",
-                                "value": "onecatalogdata"
+                                "value": "@{concat('tbl', replace(pipeline().RunId,'-',''))}"
                             }
                         ],
                         "typeProperties": {
@@ -273,7 +273,11 @@
                                 "writeBatchSize": 10000
                             },
                             "enableStaging": false,
-                            "dataIntegrationUnits": 2
+                            "dataIntegrationUnits": 2,
+                            "translator": {
+                                "value": "@activity('CopyOneCatalogDataToBlob').output",
+                                "type": "Expression"
+                            }
                         },
                         "inputs": [
                             {
