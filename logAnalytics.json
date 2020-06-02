@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "logAnalyticsSku": {
+      "type": "string",
+      "allowedValues": [
+        "pergb2018",
+        "Free",
+        "Standalone",
+        "PerNode",
+        "Standard",
+        "Premium"
+      ],
+      "defaultValue": "pergb2018",
+      "metadata": {
+        "description": "Pricing tier: PerGB2018 or legacy tiers (Free, Standalone, PerNode, Standard or Premium) which are not available to all customers."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for the log analytics account."
+      }
+    },
+    "logAnalyticsName": {
+      "type": "string",
+      "metadata" : {
+        "description" :  "Name for log analytics account."
+      }      
+    }
+
+  },
+  "variables": {
+    "logAnalytics": {
+      "name": "[parameters('logAnalyticsName')]",
+      "logAnalyticsSku": "[parameters('logAnalyticsSku')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "name": "[variables('logAnalytics').name]",
+      "apiVersion": "2015-11-01-preview",
+      "location": "[parameters('location')]",
+      "tags": {
+        "Owner": "[resourceGroup().tags.Owner]",
+        "Env": "[resourceGroup().tags.Env]",
+        "ComponentId": "[resourceGroup().tags.ComponentId]"
+      },
+      "properties": {
+        "sku": {
+          "name": "[variables('logAnalytics').logAnalyticsSku]"
+        },
+        "retentionInDays": 365
+      }
+
+    },
+
+  ],
+  "outputs": {
+    "logAnalyticsCustomerId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalytics').name), '2015-11-01-preview').customerId]"
+    },
+    "logAnalyticsPrimarySharedKey": {
+      "type": "string",
+      "value": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalytics').name), '2015-11-01-preview').primarySharedKey]"
+    }
+  }
+}
