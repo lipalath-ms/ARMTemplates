@@ -33,7 +33,7 @@
           }
         },
         "servicePrincipalId": {
-          "type": "string",
+          "type": "securestring",
           "metadata": {
               "description": "Application (client) ID"
           }
