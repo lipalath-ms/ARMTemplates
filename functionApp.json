@@ -60,6 +60,12 @@
       "metadata": {
         "description": "Resource group where storage account is located."
       }
+    },
+    "schedule": {
+      "type": "string",
+      "metadata": {
+        "description": "Schedule"
+      }
     }
   },
   "variables": {},
@@ -91,6 +97,10 @@
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
               "value": "~3"
+            },
+            {
+              "name": "[parameters('schedule')]",
+              "value": "0 */5 * * * *"
             }
           ]
         }
@@ -105,5 +115,10 @@
       }
     }
   ],
-  "outputs": {}
+  "outputs": {
+    "msi": {
+      "type": "string",
+      "value": "[reference(concat('Microsoft.Web/sites/', parameters('name')), '2018-02-01', 'Full').identity.principalId]"
+    }
+  }
 }
