@@ -46,7 +46,8 @@
       }
     },
     "variables": {
-        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]",
+        "singleQuote": "'"        
     },
     "resources": [
         {
@@ -107,8 +108,8 @@
                             "dataflow": {
                                 "referenceName": "DataFlow",
                                 "type": "DataFlowReference",
-                                "parameters": {                                    
-                                    "environment":  "[concat(\"parameters('environmentAbbreviation')\")]"                                   
+                                "parameters": {
+                                    "environment": "[concat(variables('singleQuote'), parameters('environmentAbbreviation'), variables('singleQuote'))]"                            
                                 },
                                 "datasetParameters": {
                                     "HC01Person": {
