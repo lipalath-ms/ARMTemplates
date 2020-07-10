@@ -47,9 +47,85 @@
     },
     "variables": {
         "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]",
-        "singleQuote": "'"        
+        "singleQuote": "'"
     },
     "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/Trigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Started",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "Pipeline",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2020-04-29T23:12:00.000Z",
+                        "timeZone": "UTC",
+                        "schedule": {
+                            "minutes": [
+                                0
+                            ],
+                            "hours": [
+                                5
+                            ]
+                        }
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/Pipeline')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/MemoryOptimizedIntegrationRuntime')]",
+            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "Managed",
+                "typeProperties": {
+                    "computeProperties": {
+                        "location": "AutoResolve",
+                        "dataFlowProperties": {
+                            "computeType": "MemoryOptimized",
+                            "coreCount": 8,
+                            "timeToLive": 0
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ComputeOptimizedIntegrationRuntime')]",
+            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "Managed",
+                "typeProperties": {
+                    "computeProperties": {
+                        "location": "AutoResolve",
+                        "dataFlowProperties": {
+                            "computeType": "ComputeOptimized",
+                            "coreCount": 8,
+                            "timeToLive": 0
+                        }
+                    }
+                }
+            },
+            "dependsOn": []
+        },
         {
             "name": "[concat(parameters('factoryName'), '/Pipeline')]",
             "type": "Microsoft.DataFactory/factories/pipelines",
@@ -109,7 +185,7 @@
                                 "referenceName": "DataFlow",
                                 "type": "DataFlowReference",
                                 "parameters": {
-                                    "environment": "[concat(variables('singleQuote'), parameters('environmentAbbreviation'), variables('singleQuote'))]"                            
+                                    "environment": "[concat(variables('singleQuote'), parameters('environmentAbbreviation'), variables('singleQuote'))]"
                                 },
                                 "datasetParameters": {
                                     "HC01Person": {
@@ -284,129 +360,6 @@
                 "[concat(variables('factoryId'), '/datasets/AzureBlobStorage')]",
                 "[concat(variables('factoryId'), '/datasets/AzureTableStorage')]"
             ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/MemoryOptimizedIntegrationRuntime')]",
-            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "type": "Managed",
-                "typeProperties": {
-                    "computeProperties": {
-                        "location": "AutoResolve",
-                        "dataFlowProperties": {
-                            "computeType": "MemoryOptimized",
-                            "coreCount": 8,
-                            "timeToLive": 0
-                        }
-                    }
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/ComputeOptimizedIntegrationRuntime')]",
-            "type": "Microsoft.DataFactory/factories/integrationRuntimes",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "type": "Managed",
-                "typeProperties": {
-                    "computeProperties": {
-                        "location": "AutoResolve",
-                        "dataFlowProperties": {
-                            "computeType": "ComputeOptimized",
-                            "coreCount": 8,
-                            "timeToLive": 0
-                        }
-                    }
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/HRDataLake')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "type": "AzureBlobFS",
-                "typeProperties": {
-                    "url": "[parameters('dataLakeStorageUrl')]",
-                    "tenant": "[parameters('tenantId')]",
-                    "servicePrincipalId": "[parameters('servicePrincipalId')]",
-                    "servicePrincipalKey": {
-                        "type": "SecureString",
-                        "value": "[parameters('servicePrincipalKey')]"
-                    }
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/AzureTableStorage')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "type": "AzureTableStorage",
-                "typeProperties": {
-                    "connectionString": "[parameters('storageAccountConnectionString')]"
-                },
-                "connectVia": {
-                    "referenceName": "MemoryOptimizedIntegrationRuntime",
-                    "type": "IntegrationRuntimeReference"
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/integrationRuntimes/MemoryOptimizedIntegrationRuntime')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "type": "AzureBlobStorage",
-                "typeProperties": {
-                    "connectionString": "[parameters('storageAccountConnectionString')]"
-                },
-                "connectVia": {
-                    "referenceName": "MemoryOptimizedIntegrationRuntime",
-                    "type": "IntegrationRuntimeReference"
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/integrationRuntimes/MemoryOptimizedIntegrationRuntime')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/Trigger')]",
-            "type": "Microsoft.DataFactory/factories/triggers",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "runtimeState": "Stopped",
-                "pipelines": [],
-                "type": "ScheduleTrigger",
-                "typeProperties": {
-                    "recurrence": {
-                        "frequency": "Day",
-                        "interval": 1,
-                        "startTime": "2020-04-29T23:12:00Z",
-                        "timeZone": "UTC",
-                        "schedule": {
-                            "minutes": [
-                                0
-                            ],
-                            "hours": [
-                                5
-                            ]
-                        }
-                    }
-                }
-            },
-            "dependsOn": []
         },
         {
             "name": "[concat(parameters('factoryName'), '/HC01Building')]",
@@ -922,6 +875,63 @@
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/linkedServices/HRDataLake')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/HRDataLake')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('dataLakeStorageUrl')]",
+                    "tenant": "[parameters('tenantId')]",
+                    "servicePrincipalId": "[parameters('servicePrincipalId')]",
+                    "servicePrincipalKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('servicePrincipalKey')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureTableStorage')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureTableStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('storageAccountConnectionString')]"
+                },
+                "connectVia": {
+                    "referenceName": "MemoryOptimizedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/MemoryOptimizedIntegrationRuntime')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobStorage",
+                "typeProperties": {
+                    "connectionString": "[parameters('storageAccountConnectionString')]"
+                },
+                "connectVia": {
+                    "referenceName": "MemoryOptimizedIntegrationRuntime",
+                    "type": "IntegrationRuntimeReference"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/integrationRuntimes/MemoryOptimizedIntegrationRuntime')]"
             ]
         },
         {
