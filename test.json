@@ -107,8 +107,8 @@
                             "dataflow": {
                                 "referenceName": "DataFlow",
                                 "type": "DataFlowReference",
-                                "parameters": {
-                                    "environment": "\"[parameters('environmentAbbreviation')]\""                 
+                                "parameters": {                                    
+                                    "environment": "[concat(''', [parameters('environmentAbbreviation'), ''']"                                   
                                 },
                                 "datasetParameters": {
                                     "HC01Person": {
